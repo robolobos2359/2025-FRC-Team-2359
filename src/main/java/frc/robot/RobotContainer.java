@@ -58,8 +58,8 @@ public class RobotContainer {
   // Replace with CommandPS4Controller or CommandJoystick if needed
   //private final CommandXboxController m_driverController =
   //    new CommandXboxController(OperatorConstants.kDriverControllerPort);
-  private final CommandXboxController driveStick = new CommandXboxController(0);
-  //private final CommandJoystick driveStick = new CommandJoystick(0);
+  //private final CommandXboxController driveStick = new CommandXboxController(0);
+  private final CommandJoystick driveStick = new CommandJoystick(0);
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
@@ -82,26 +82,36 @@ public class RobotContainer {
     drivetrain.setDefaultCommand(
         // Drivetrain will execute this command periodically
         drivetrain.applyRequest(() ->
-            drive.withVelocityX(-driveStick.getLeftY() * MaxSpeed) // Drive forward with negative Y (forward)
-                .withVelocityY(-driveStick.getLeftX() * MaxSpeed) // Drive left with negative X (left)
-                .withRotationalRate(-driveStick.getRightX() * MaxAngularRate) // Drive counterclockwise with negative X (left)
+            drive.withVelocityX(-driveStick.getY() * MaxSpeed) // Drive forward with negative Y (forward)
+                .withVelocityY(-driveStick.getX() * MaxSpeed) // Drive left with negative X (left)
+                .withRotationalRate(-driveStick.getZ() * MaxAngularRate) // Drive counterclockwise with negative z (left)
         )
     );
 
-    driveStick.a().whileTrue(drivetrain.applyRequest(() -> brake));
-    driveStick.b().whileTrue(drivetrain.applyRequest(() ->
-        point.withModuleDirection(new Rotation2d(-driveStick.getLeftY(), -driveStick.getLeftX()))
+    // Brake is button 3 (stick lower-left button)
+    driveStick.button(3).whileTrue(drivetrain.applyRequest(() -> brake));
+    
+    // This is button 6 (stick upper-right button)
+    // TODO - What does this do? This was auto-generated from the CTRE code
+    driveStick.button(6).whileTrue(drivetrain.applyRequest(() ->
+        point.withModuleDirection(new Rotation2d(-driveStick.getY(), -driveStick.getX()))
     ));
 
-    // Run SysId routines when holding back/start and X/Y.
+    // Run SysId routines when holding specific buttons.
     // Note that each routine should be run exactly once in a single log.
-    driveStick.back().and(driveStick.y()).whileTrue(drivetrain.sysIdDynamic(Direction.kForward));
-    driveStick.back().and(driveStick.x()).whileTrue(drivetrain.sysIdDynamic(Direction.kReverse));
-    driveStick.start().and(driveStick.y()).whileTrue(drivetrain.sysIdQuasistatic(Direction.kForward));
-    driveStick.start().and(driveStick.x()).whileTrue(drivetrain.sysIdQuasistatic(Direction.kReverse));
+    /*
+    7, base of stick, top row left
+    8, base of stick, top row right
+    9, base of stick, middle row left
+    10, base of stick, middle row right
+    */
+    driveStick.button(7).whileTrue(drivetrain.sysIdDynamic(Direction.kForward));
+    driveStick.button(8).whileTrue(drivetrain.sysIdDynamic(Direction.kReverse));
+    driveStick.button(9).whileTrue(drivetrain.sysIdQuasistatic(Direction.kForward));
+    driveStick.button(10).whileTrue(drivetrain.sysIdQuasistatic(Direction.kReverse));
 
-    // reset the field-centric heading on left bumper press
-    driveStick.leftBumper().onTrue(drivetrain.runOnce(() -> drivetrain.seedFieldCentric()));
+    // reset the field-centric heading on button 1
+    driveStick.button(1).onTrue(drivetrain.runOnce(() -> drivetrain.seedFieldCentric()));
 
     drivetrain.registerTelemetry(logger::telemeterize);
 }
